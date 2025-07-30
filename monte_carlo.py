@@ -33,7 +33,7 @@ def monte_carlo_option_price(S, K, T, r, sigma, num_simulations=10000, option_ty
     conf_lower = price - z * std_err
     conf_upper = price + z * std_err
 
-    return price, (conf_lower, conf_upper), ST
+    return price, (conf_lower, conf_upper), ST, 
 
 
 def simulate_price_paths(S, T, r, sigma, num_steps=100, num_paths=10):
@@ -60,3 +60,36 @@ def simulate_price_paths(S, T, r, sigma, num_steps=100, num_paths=10):
         paths[:, t] = paths[:, t-1] * np.exp((r - 0.5 * sigma**2) * dt + sigma * np.sqrt(dt) * Z)
     
     return paths
+
+
+def generate_heatmap_data(S, K, r, base_sigma, base_T, option_type='call', num_simulations=5000):
+    """
+    Generate a 2D grid of option prices where volatility and maturity ranges 
+    are dynamically adjusted based on user inputs.
+
+    Parameters:
+        S: Initial stock price
+        K: Strike price
+        r: Risk-free rate
+        base_sigma: The user's selected volatility
+        base_T: The user's selected time to maturity
+        option_type: 'call' or 'put'
+        num_simulations: Number of Monte Carlo simulations
+    
+    Returns:
+        heatmap_data: 2D numpy array [maturities x sigmas]
+        sigmas: Array of volatility values
+        maturities: Array of time to maturity values
+    """
+    # Dynamic ranges centered around user inputs
+    sigmas = np.linspace(max(0.01, base_sigma * 0.5), base_sigma * 1.5, 20)
+    maturities = np.linspace(max(0.05, base_T * 0.5), base_T * 2.0, 20)
+
+    heatmap_data = np.zeros((len(maturities), len(sigmas)))
+
+    for i, T in enumerate(maturities):
+        for j, sigma in enumerate(sigmas):
+            price, _, _ = monte_carlo_option_price(S, K, T, r, sigma, num_simulations, option_type=option_type)
+            heatmap_data[i, j] = price
+
+    return heatmap_data, sigmas, maturities
